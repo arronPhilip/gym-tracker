@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Tracker</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+        <div class="container">
+            <h1>Gym Workout Tracker</h1>
+
+            <input type="text" id="search" placeholder="Search workouts...">
+
+            <div id="stats">
+    <h2>Workout Stats</h2>
+
+    <div id="progress">
+    <h2>Progress</h2>
+
+    <select id="progressExercise">
+        <option value="">Select Exercise</option>
+    </select>
+    
+    <div id="progressStats">
+    <p>Best Weight: <span id="bestWeight">-</span></p>
+    <p>Latest Weight: <span id="latestWeight">-</span></p>
+</div>
+
+    <div id="progressData"></div>
+
+    <canvas id="progressChart"></canvas>
+
+</div>
+    <p>Total Workouts: <span id="totalWorkouts">0</span></p>
+</div>
+
+            <form id="workoutForm">
+                
+                <input type ="text" id= "exercise" placeholder="Exercise" required>
+                
+                <input type="number" id= "sets" placeholder="Sets" required>
+                <input type="number" id= "reps" placeholder="Reps" required>
+            <input type="number" id="weight" placeholder="Weight (kg)"required>
+           <button type="submit" id="submitButton">Add Workout</button>
+            </form>
+
+            <div id="workouts"></div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="script.js"></script>
+
+</body>
+</html>

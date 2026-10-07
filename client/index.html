@@ -3,55 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Gym Tracker</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-        <div class="container">
-            <h1>Gym Workout Tracker</h1>
+    <div class="app">
 
-            <input type="text" id="search" placeholder="Search workouts...">
+        <!-- SIDEBAR -->
 
-            <div id="stats">
-    <h2>Workout Stats</h2>
+        <aside class="sidebar">
 
-    <div id="progress">
-    <h2>Progress</h2>
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <span>Gym<span class="logo-accent">Track</span></span>
+            </div>
 
-    <select id="progressExercise">
-        <option value="">Select Exercise</option>
-    </select>
-    
-    <div id="progressStats">
-    <p>Best Weight: <span id="bestWeight">-</span></p>
-    <p>Latest Weight: <span id="latestWeight">-</span></p>
+            <nav>
+
+                <a href="#" class="nav-item active">
+                    <span>▣</span>
+                    Dashboard
+                </a>
+
+                <a href="#progress" class="nav-item">
+                    <span>↗</span>
+                    Progress
+                </a>
+
+                <a href="#workoutForm" class="nav-item">
+                    <span>＋</span>
+                    Add Workout
+                </a>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+                <p>GYM TRACKER</p>
+                <span>Train. Track. Improve.</span>
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+
+        <main class="main-content">
+
+            <!-- TOP BAR -->
+
+            <header class="topbar">
+
+                <div>
+                    <p class="eyebrow">WELCOME BACK</p>
+                    <h1>Training Dashboard</h1>
+                </div>
+
+                <div class="status">
+                    <span class="status-dot"></span>
+                    Training Mode
+                </div>
+
+            </header>
+
+
+            <!-- SEARCH -->
+
+            <div class="search-wrapper">
+
+                <span class="search-icon">⌕</span>
+
+                <input
+                    type="text"
+                    id="search"
+                    placeholder="Search your workouts..."
+                >
+
+            </div>
+
+
+            <!-- STATS -->
+
+            <section class="dashboard-stats">
+
+                <div class="stat-card">
+
+                    <div class="stat-icon purple">▣</div>
+
+                    <div>
+                        <p>Total Workouts</p>
+                        <strong id="totalWorkouts">0</strong>
+                    </div>
+
+                
+
+
+               <div class="stat-card">
+
+    <div class="stat-icon green">↗</div>
+
+    <div>
+        <p>Exercises Tracked</p>
+        <strong id="exercisesTracked">0</strong>
+    </div>
+
 </div>
 
-    <div id="progressData"></div>
 
+<div class="stat-card">
+
+    <div class="stat-icon orange">⚡</div>
+
+    <div>
+        <p>Total Volume</p>
+        <strong id="totalVolume">0 kg</strong>
+    </div>
+
+</div>
+
+                
+
+            </section>
+
+
+            <!-- PROGRESS -->
+
+            <section id="progress" class="dashboard-card">
+
+                <div class="section-header">
+
+                    <div>
+                        <p class="section-label">PERFORMANCE</p>
+                        <h2>Progress Overview</h2>
+                    </div>
+
+                    <select id="progressExercise">
+                        <option value="">Select Exercise</option>
+                    </select>
+
+                </div>
+
+
+                <!-- PROGRESS NUMBERS -->
+
+                <div id="progressStats">
+
+                    <div class="progress-stat">
+
+                        <p>BEST WEIGHT</p>
+
+                        <strong id="bestWeight">-</strong>
+
+                    </div>
+
+
+                    <div class="progress-stat">
+
+                        <p>LATEST WEIGHT</p>
+
+                        <strong id="latestWeight">-</strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PROGRESS HISTORY -->
+
+<div id="progressData"></div>
+
+<div id="progressEmptyState" class="progress-empty">
+    <div class="empty-icon">↗</div>
+    <h3>Select an exercise</h3>
+    <p>Choose an exercise above to see your strength progression.</p>
+</div>
+
+<div class="chart-container">
     <canvas id="progressChart"></canvas>
-
-</div>
-    <p>Total Workouts: <span id="totalWorkouts">0</span></p>
 </div>
 
-            <form id="workoutForm">
-                
-                <input type ="text" id= "exercise" placeholder="Exercise" required>
-                
-                <input type="number" id= "sets" placeholder="Sets" required>
-                <input type="number" id= "reps" placeholder="Reps" required>
-            <input type="number" id="weight" placeholder="Weight (kg)"required>
-           <button type="submit" id="submitButton">Add Workout</button>
-            </form>
+               
 
-            <div id="workouts"></div>
-        </div>
+            </section>
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="script.js"></script>
+
+            <!-- ADD WORKOUT -->
+
+            <section class="dashboard-card">
+
+                <div class="section-header">
+
+                    <div>
+                        <p class="section-label">TRAINING LOG</p>
+                        <h2>Log Workout</h2>
+                    </div>
+
+                </div>
+
+
+                <form id="workoutForm">
+
+                    <input
+                        type="text"
+                        id="exercise"
+                        placeholder="Exercise"
+                        required
+                    >
+
+                    <input
+                        type="number"
+                        id="sets"
+                        placeholder="Sets"
+                        required
+                    >
+
+                    <input
+                        type="number"
+                        id="reps"
+                        placeholder="Reps"
+                        required
+                    >
+
+                    <input
+                        type="number"
+                        id="weight"
+                        placeholder="Weight (kg)"
+                        required
+                    >
+                    <button type="submit" id="submitButton">Add Workout</button>
+<button type="button" id="cancelEditButton" style="display: none;">
+    Cancel
+</button>
+
+
+                </form>
+                <p id="formMessage" class="form-message"></p>
+
+            </section>
+
+
+            <!-- WORKOUT HISTORY -->
+
+            <section class="workout-section">
+
+                <div class="section-header">
+
+                    <div>
+                        <p class="section-label">HISTORY</p>
+                        <h2>Your Workouts</h2>
+                    </div>
+
+                </div>
+
+                <div id="workouts">
+    <p id="loadingMessage">Loading workouts...</p>
+</div>
+            </section>
+
+
+            <!-- FOOTER -->
+
+            <footer>
+                <p>GymTrack • Train smarter, get stronger.</p>
+            </footer>
+
+        </main>
+
+    </div>
+
+
+    <!-- CHART.JS -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="script.js"></script>
 
 </body>
+
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <h3>Delete Workout?</h3>
+        <p>Are you sure you want to delete this workout?</p>
+
+        <div class="modal-actions">
+            <button id="cancelDelete">Cancel</button>
+            <button id="confirmDelete">Delete</button>
+        </div>
+    </div>
+</div>
 </html>

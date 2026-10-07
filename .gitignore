@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .env
+# Private environment files
+.env.*
+!.env.example
+!**/.env.example
+coverage/

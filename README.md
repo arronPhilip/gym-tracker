@@ -1,6 +1,6 @@
 # GymTrack
 
-A personal, local-only workout website built with React + Vite, Express and MongoDB. Modern charcoal/green design with responsive desktop, tablet and narrow-screen layouts.
+A Google-authenticated, multi-user workout website built with React + Vite, Express and MongoDB. Modern charcoal/green design with responsive desktop, tablet and narrow-screen layouts.
 
 ## Start on this computer
 
@@ -15,7 +15,7 @@ Keep that terminal open. Open **http://127.0.0.1:5173** in your browser. Press *
 
 The assistant-run preview is temporary and may stop when its execution environment closes or times out. For normal use, run the command in your own PowerShell terminal. Stop any existing assistant preview first (ask Strawberry to stop it), otherwise the ports will already be in use.
 
-The existing `server/.env` file is used. It must contain `MONGO_URI`. Never put that connection string in frontend code, screenshots, chat, or Git. A template is available in `server/.env.example`.
+The existing `server/.env` file is used. It must contain `MONGO_URI`, a dedicated `GOOGLE_CLIENT_ID`, and `LEGACY_OWNER_EMAIL` for access to pre-existing records. Google sign-in must be configured before you can access workouts; there is no unauthenticated local bypass. Never put that connection string in frontend code, screenshots, chat, or Git. A template is available in `server/.env.example`.
 
 Dependencies are already installed on this computer. On a fresh checkout:
 
@@ -29,7 +29,7 @@ Then privately create `server/.env` from the example before starting.
 ## Features
 
 - Full workout sessions: name, date, multiple exercises, individual-set reps/weight/completion, notes and duration.
-- Recoverable active workout draft in this browser's local storage. Refresh and choose Resume your workout.
+- Recoverable, per-account encrypted active workout draft in this browser's local storage. Refresh and choose Resume your workout.
 - Exercise suggestions and custom exercise names; add/remove sets and exercises.
 - Reusable routines with target sets, reps and weights; create/edit/delete/start a routine.
 - Rest timers for 60/90/120 seconds, add 30 seconds, and dismiss.
@@ -47,11 +47,15 @@ The original `workouts` collection is preserved unchanged. Its records appear as
 
 The old `client/` files are retained for reference, including the user's uncommitted changes. The active website is now in `src/`. Old `/workouts` endpoints are retired; the new website uses `/api/` routes. No automatic database migration runs at startup.
 
-## Privacy and local scope
+## Privacy and authentication
 
-There is **no signup/login** in this personal release. Both processes bind to `127.0.0.1`, not the network. Do not publish it or expose it using a tunnel without adding authentication, user-specific data, hosting safeguards and HTTPS. It is not a native mobile app; phone-sized layouts are responsive, but another device cannot connect to this loopback-only server.
+Google sign-in is verified on the server. Public signup accepts verified Gmail and Google Workspace identities, but each account can only access its own sessions, routines, bodyweight and exports. The configured verified legacy-owner email alone can access the original read-only workouts and pre-existing unowned records. Startup does not migrate or delete old data. Other third-party email Google accounts are currently not accepted.
 
-Workouts/routines/bodyweight are stored in MongoDB once saved. An unfinished workout draft stays on this browser/device; it is not cloud-synced and is not included in exports. Clearing browser storage removes that draft. Routine editor changes are not recoverable drafts. The rest timer is not preserved after reload and does not provide a sound or background notification. JSON export is a download, not a scheduled backup; import is not included.
+Opaque session cookies are HttpOnly; production cookies require HTTPS and use Secure, SameSite=Strict and the __Host- prefix. Account headers prevent stale-tab access after an account switch. Writes require anti-forgery tokens and allowed origins. Sessions expire after seven days and logout revokes them in MongoDB. Sign-in attempts are rate-limited in memory, which resets on restart; this is not a distributed abuse prevention system.
+
+Both processes bind to 127.0.0.1 locally. Production binds to the platform port and requires an HTTPS origin and legacy-owner configuration. Missing login-client configuration leaves data locked. Render, Google and MongoDB setup plus live sign-in testing are still required before calling the hosted release ready.
+
+Unfinished drafts are encrypted with AES-GCM, stored separately for each account on the device, and unavailable through the signed-out interface. Their keys are held with the account in MongoDB; encryption is not protection against malicious software, an unlocked active account or a compromised database. Old v1 drafts are not imported. Drafts are not cloud-synced or included in exports; clearing browser storage removes them. Routine-editor changes and the timer are not recovered. JSON export is a download, not an automatic backup; import and automatic account deletion are not included. Privacy information is available at /privacy.
 
 On this machine the default MongoDB SRV DNS lookup was refused. A narrow fallback retries **only** an `ECONNREFUSED` `querySrv`/`queryTxt` failure using DNS servers `1.1.1.1` and `8.8.8.8` in the backend's Node process. This does not change Windows DNS settings or transmit database credentials to DNS. Set `MONGO_DNS_FALLBACK=0` in `server/.env` if you prefer to disable this fallback.
 
@@ -81,3 +85,7 @@ npm start
 Open **http://127.0.0.1:5000**. The backend serves the generated `dist` website directly. `npm run preview` is not used because it would not provide the MongoDB API proxy.
 
 See `VALIDATION.md` for the checks actually performed and remaining limitations.
+
+## Render Free deployment
+
+See `DEPLOYMENT.md` for the protected release configuration and verification checklist. Never deploy an earlier unprotected commit. No paid plan or payment method is required by this project configuration; inspect the provider account and plan before creating the service.

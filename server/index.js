@@ -5,6 +5,9 @@ const { createApp } = require('./app');
 const { mongoStore, memoryStore } = require('./store');
 async function start() {
   const testMode = process.env.GYMTRACK_TEST_MODE === '1';
+  const production = process.env.NODE_ENV === 'production';
+  if (production && testMode) throw new Error('Test storage cannot run in production.');
+  if (production && !process.env.LEGACY_OWNER_EMAIL) throw new Error('Legacy owner configuration is required.');
   if (!testMode) {
     if (!process.env.MONGO_URI) throw new Error('missing_config');
     const options = { serverSelectionTimeoutMS: 10000, autoIndex: false, autoCreate: false };
@@ -21,8 +24,13 @@ async function start() {
   }
   const port = Number(process.env.PORT || 5000);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('invalid_port');
-  const server = createApp(testMode ? memoryStore() : mongoStore).listen(port, '127.0.0.1', () => {
-    console.log(`GymTrack running at http://127.0.0.1:${port} (${testMode ? 'isolated in-memory TEST mode' : 'MongoDB connected'}).`);
+  if (!testMode) {
+    const { mongoAuthStore } = require('./auth');
+    await mongoAuthStore.ensureIndexes();
+  }
+  const host = production ? '0.0.0.0' : '127.0.0.1';
+  const server = createApp(testMode ? memoryStore() : mongoStore, testMode ? { auth: { store: require('./auth').memoryAuthStore() } } : {}).listen(port, host, () => {
+    console.log(`GymTrack listening on ${host}:${port} (${testMode ? 'isolated in-memory TEST mode' : 'MongoDB connected'}). Workout data requires Google sign-in.`);
   });
   server.on('error', () => { console.error('Cannot start GymTrack. The local port may already be in use.'); process.exitCode = 1; mongoose.disconnect(); });
   async function stop() { server.close(); await mongoose.disconnect(); process.exit(0); }

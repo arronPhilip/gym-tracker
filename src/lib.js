@@ -6,10 +6,32 @@ export const formatDate = (value) => new Date(`${value}T12:00:00`).toLocaleDateS
 export const newSet = (source = {}) => ({ id: uid(), reps: source.reps ?? 10, weight: source.weight ?? 0, completed: false })
 export const newExercise = (name = '') => ({ id: uid(), name, sets: [newSet(), newSet(), newSet()] })
 export const newDraft = () => ({ name: 'My workout', date: today(), notes: '', duration: 0, startedAt: Date.now(), exercises: [newExercise()] })
-export function readDraft() {
-  try { const value = JSON.parse(localStorage.getItem('gymtrack.draft.v1')); if (value && typeof value.name === 'string' && Array.isArray(value.exercises) && value.exercises.length && value.exercises.every((e) => typeof e.name === 'string' && Array.isArray(e.sets) && e.sets.length)) return value } catch { /* Unsupported or unavailable local storage. */ }
+export const draftStorageKey = user => `gymtrack.draft.v2:${user.id}`
+function decode64(value) { return Uint8Array.from(atob(value.replaceAll('-', '+').replaceAll('_', '/')), c => c.charCodeAt(0)) }
+function encode64(value) { const bytes = new Uint8Array(value); let text = ''; for (let i = 0; i < bytes.length; i += 8192) text += String.fromCharCode(...bytes.subarray(i, i + 8192)); return btoa(text) }
+async function draftCryptoKey(user) { if (!user?.id || !user?.draftKey) throw new Error('Sign in before accessing a draft.'); return crypto.subtle.importKey('raw', decode64(user.draftKey), 'AES-GCM', false, ['encrypt', 'decrypt']) }
+export async function readDraft(user) {
+  const raw = localStorage.getItem(draftStorageKey(user)); if (!raw) return null
+  const record = JSON.parse(raw); const key = await draftCryptoKey(user)
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decode64(record.iv), additionalData: new TextEncoder().encode(user.id) }, key, decode64(record.ciphertext))
+  const value = JSON.parse(new TextDecoder().decode(plain))
+  if (value && typeof value.name === 'string' && Array.isArray(value.exercises) && value.exercises.length && value.exercises.every(e => typeof e.name === 'string' && Array.isArray(e.sets) && e.sets.length)) return value
   return null
 }
+let draftQueue = Promise.resolve()
+export function writeDraft(user, value) {
+  const snapshot = value ? JSON.stringify(value) : null
+  const operation = draftQueue.then(async () => {
+    if (!snapshot) { localStorage.removeItem(draftStorageKey(user)); return }
+    const key = await draftCryptoKey(user); const iv = crypto.getRandomValues(new Uint8Array(12))
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(user.id) }, key, new TextEncoder().encode(snapshot))
+    localStorage.setItem(draftStorageKey(user), JSON.stringify({ version: 2, iv: encode64(iv), ciphertext: encode64(encrypted) }))
+  })
+  draftQueue = operation.catch(() => {}); return operation
+}
+let csrfToken = ''; let accountId = ''
+export const setCsrfToken = value => { csrfToken = value || '' }
+export const setAccountId = value => { accountId = value || '' }
 export function completedSets(session) { return session.exercises.flatMap((exercise) => exercise.sets.filter((set) => set.completed).map((set) => ({ ...set, name: exercise.name }))) }
 export function volume(session) { return completedSets(session).reduce((sum, set) => sum + set.weight * set.reps, 0) }
 export function records(sessions) {
@@ -37,8 +59,9 @@ export async function request(path, options = {}) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 15000)
   try {
-    const response = await fetch(`/api/${path}`, { ...options, signal: controller.signal, headers: { 'Content-Type': 'application/json', ...options.headers } })
+    const response = await fetch(`/api/${path}`, { ...options, credentials: 'same-origin', signal: controller.signal, headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'X-GymTrack-CSRF': csrfToken } : {}), ...(accountId ? { 'X-GymTrack-Account': accountId } : {}), ...options.headers } })
     const data = await response.json().catch(() => ({}))
+    if (response.status === 401 && typeof window !== 'undefined' && !path.startsWith('auth/')) window.dispatchEvent(new Event('gymtrack:expired'))
     if (!response.ok) throw new Error(data.message || 'The request failed. Please try again.')
     return data
   } catch (error) {

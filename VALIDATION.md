@@ -1,3 +1,15 @@
+# Protected multi-user release — 7 October 2026
+
+Local automated validation is recorded below separately from the original release. Fresh direct checks passed: 29 tests, zero failures, clean ESLint and a successful Vite production build. The PowerShell npm wrapper stalled without output and was stopped; invoking the same installed tools directly completed successfully.
+
+Multi-user checks use isolated in-memory storage and mocked Google token verification. They cover anonymous denial, two-account data isolation, owner-only legacy access, ownership-spoofing rejection, export isolation, CSRF/origin safeguards, Google issuer/audience/expiry checks, logout and encrypted per-account drafts. They do not establish live Google login, hosted secure cookies or Render-to-MongoDB connectivity. See DEPLOYMENT.md for the outstanding live release checks.
+
+No hosted release is claimed. No old workout data was migrated or deleted by these code changes. New authentication collections/indexes will be created when the authenticated backend starts against MongoDB.
+
+---
+
+## Archived original personal release validation
+
 # GymTrack validation — 7 October 2026
 
 ## Automated checks

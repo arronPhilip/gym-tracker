@@ -2,6 +2,12 @@
 
 A Google-authenticated, multi-user workout website built with React + Vite, Express and MongoDB. Modern charcoal/green design with responsive desktop, tablet and narrow-screen layouts.
 
+## Live app
+
+**Open GymTrack:** https://gymtrack-arron.onrender.com/
+
+The free hosted service may sleep between visits and take a short time to wake up. The landing page and health check are online, but Google sign-in is not yet working on the hosted domain: the configured Google OAuth client must authorize `https://gymtrack-arron.onrender.com` before users can sign in and access their private workouts.
+
 ## Start on this computer
 
 Open PowerShell and run:

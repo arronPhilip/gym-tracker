@@ -35,7 +35,11 @@ function TrainingApp({ user, onSignOut }) {
   function fromRoutine(routine) { replaceDraft({ ...newDraft(), name: routine.name, notes: routine.notes, exercises: routine.exercises.map((e) => ({ ...e, id: uid(), sets: e.sets.map((s) => ({ ...s, id: uid(), completed: false })) })) }) }
   function editSession(session) { replaceDraft({ ...structuredClone(session), editingId: session._id, _id: undefined, startedAt: undefined }) }
   function deleteRecord(type, record, label) {
-    setConfirm({ title: `Delete ${label}?`, message: 'This permanently removes this record from your database. This cannot be undone.', button: 'Delete', danger: true, action: async () => { await request(`${type}/${record._id}`, { method: 'DELETE' }); setNotice(`${label} deleted.`); await refresh() } })
+    const path = type === 'legacy' ? `legacy/${record._id.slice('legacy:'.length)}` : `${type}/${record._id}`
+    const message = type === 'legacy'
+      ? 'This permanently removes the earlier exercise log from your database, history, progress and future exports. This cannot be undone.'
+      : 'This permanently removes this record from your database. This cannot be undone.'
+    setConfirm({ title: `Delete ${label}?`, message, button: 'Delete', danger: true, action: async () => { await request(path, { method: 'DELETE' }); setNotice(`${label} deleted.`); await refresh() } })
   }
   async function saveWorkout(value) {
     const duration = value.startedAt ? Math.max(1, Math.round((Date.now() - value.startedAt) / 60000)) : value.duration
@@ -72,6 +76,7 @@ function TrainingApp({ user, onSignOut }) {
       {page === 'dashboard' && <Dashboard sessions={data.sessions} bodyweights={data.bodyweights} personalRecords={personalRecords} draft={draft} onStart={() => replaceDraft(newDraft())} onResume={() => setPage('workout')} onPage={setPage} />}
       {page === 'workout' && (draft ? <WorkoutEditor value={draft} onChange={setDraft} onSave={saveWorkout} exercises={allExercises} personalRecords={personalRecords} onRest={(seconds) => { setNow(Date.now()); setRestEnd(Date.now() + seconds * 1000) }} onDiscard={() => setConfirm({ title: 'Discard workout draft?', message: 'Only the unfinished draft will be removed. Your saved workouts are not affected.', button: 'Discard draft', danger: true, action: () => { setDraft(null); setRestEnd(null) } })} /> : <section className="card"><Empty title="Make today a training day" action={<div className="button-row"><button className="button primary" onClick={() => replaceDraft(newDraft())}><Icon name="plus" /> Start a workout</button><button className="button secondary" onClick={() => setPage('routines')}>Choose a routine</button></div>}>Start fresh or use a saved routine. Your draft will be saved on this device as you go.</Empty></section>)}
       {page === 'history' && <History sessions={data.sessions} onEdit={editSession} onDelete={(s) => deleteRecord('sessions', s, 'workout')} onStart={() => replaceDraft(newDraft())} />}
+      {page === 'history' && <History sessions={data.sessions} onEdit={editSession} onDelete={(s) => deleteRecord('sessions', s, 'workout')} onDeleteLegacy={(s) => deleteRecord('legacy', s, 'earlier exercise log')} onStart={() => replaceDraft(newDraft())} />}
       {page === 'routines' && (routineDraft ? <WorkoutEditor routine value={routineDraft} onChange={setRoutineDraft} onSave={saveRoutine} exercises={allExercises} personalRecords={personalRecords} onDiscard={() => setConfirm({ title: 'Discard routine changes?', message: 'Unsaved changes to this routine will be lost.', button: 'Discard changes', action: () => setRoutineDraft(null) })} /> : <><div className="section-heading"><div><h2>Build your go-to sessions</h2><p>Less planning. More lifting.</p></div><button className="button primary" onClick={() => setRoutineDraft({ ...newDraft(), name: 'New routine' })}><Icon name="plus" /> Create routine</button></div>{data.routines.length ? <div className="routine-grid">{data.routines.map((r) => <article className="card routine-card" key={r._id}><span className="tile-icon"><Icon name="book" /></span><h3>{r.name}</h3><p>{r.exercises.length} exercises · {r.exercises.reduce((sum, e) => sum + e.sets.length, 0)} sets</p><ul>{r.exercises.map((e) => <li key={e.id}>{e.name}<span>{e.sets.length} sets</span></li>)}</ul><button className="button primary full" onClick={() => fromRoutine(r)}>Start routine <Icon name="arrow" /></button><div className="card-actions"><button onClick={() => setRoutineDraft({ ...structuredClone(r), editingId: r._id })}><Icon name="edit" size={16} /> Edit</button><button className="danger-text" onClick={() => deleteRecord('routines', r, 'routine')}><Icon name="trash" size={16} /> Delete</button></div></article>)}</div> : <section className="card"><Empty icon="book" title="Your next workout, already planned">Save exercises, weights and reps as a reusable routine. Nothing is pre-filled with pretend progress.</Empty></section>}</>)}
       {page === 'progress' && <Progress sessions={data.sessions} personalRecords={personalRecords} />}
       {page === 'bodyweight' && <Bodyweight entries={data.bodyweights} onSave={async (value, id) => { await request(id ? `bodyweights/${id}` : 'bodyweights', { method: id ? 'PUT' : 'POST', body: JSON.stringify(value) }); setNotice('Bodyweight saved.'); await refresh() }} onDelete={(w) => deleteRecord('bodyweights', w, 'bodyweight entry')} />}
@@ -107,10 +112,69 @@ function WorkoutEditor({ value, onChange, onSave, routine = false, personalRecor
     {error && <div className="banner error" role="alert">{error}</div>}<div className="save-bar"><span>{routine ? `${value.exercises.length} exercises · ${total} target sets` : `${done} completed sets · ${formatNumber(volume(value))} kg volume`}</span><button className="button primary" type="submit" disabled={busy}>{busy ? 'Saving…' : routine ? 'Save routine' : 'Save workout'}<Icon name="check" /></button></div>
   </form>
 }
-function History({ sessions, onEdit, onDelete, onStart }) {
-  const [search, setSearch] = useState(''); const [expanded, setExpanded] = useState(null)
-  const filtered = sessions.filter((s) => `${s.name} ${s.date} ${s.exercises.map((e) => e.name).join(' ')}`.toLowerCase().includes(search.toLowerCase()))
-  return <><div className="section-heading"><div><h2>Your effort, recorded.</h2><p>{sessions.filter((s) => !s.legacy).length} sessions · {sessions.filter((s) => s.legacy).length} earlier exercise logs</p></div><button className="button primary" onClick={onStart}><Icon name="plus" /> New workout</button></div><label className="search-box"><Icon name="search" /><input aria-label="Search workout history" placeholder="Search workouts, exercises or dates…" value={search} onChange={(e) => setSearch(e.target.value)} /></label>{!filtered.length ? <section className="card"><Empty icon="history" title={search ? 'No matching workouts' : 'Your story starts with a session'}>{search ? 'Try another exercise, workout name or date.' : 'Log your first workout and build a history you can be proud of.'}</Empty></section> : <div className="history-list">{filtered.map((s) => <article className="card history-card" key={s._id}><div className="history-top"><span className="tile-icon"><Icon name="dumbbell" /></span><div className="history-title"><h3>{s.name}</h3><p>{formatDate(s.date)}{s.legacy && <span className="legacy-tag">Earlier log · read-only</span>}</p></div><button className="button secondary small" aria-expanded={expanded === s._id} onClick={() => setExpanded(expanded === s._id ? null : s._id)}>{expanded === s._id ? 'Hide details' : 'View details'}</button></div><div className="history-metrics"><span>{s.exercises.length} exercises</span><span>{completedSets(s).length} completed sets</span><span>{formatNumber(volume(s))} kg volume</span>{s.duration > 0 && <span>{s.duration} min</span>}</div>{expanded === s._id && <div className="session-details">{s.exercises.map((e) => <div key={e.id}><h4>{e.name}</h4>{e.sets.map((set, i) => <p key={set.id}><span>Set {i + 1}</span><strong>{formatNumber(set.weight)} kg × {set.reps} reps</strong><span>{set.completed ? 'Complete' : 'Not completed'}</span></p>)}</div>)}{s.notes && <p className="session-notes">{s.notes}</p>}</div>}{!s.legacy && <div className="card-actions"><button onClick={() => onEdit(s)}><Icon name="edit" size={16} /> Edit workout</button><button className="danger-text" onClick={() => onDelete(s)}><Icon name="trash" size={16} /> Delete</button></div>}</article>)}</div>}</>
+function History({ sessions, onEdit, onDelete, onDeleteLegacy, onStart }) {
+  const [search, setSearch] = useState('')
+  const [expanded, setExpanded] = useState(null)
+  const filtered = sessions.filter((session) =>
+    `${session.name} ${session.date} ${session.exercises.map((exercise) => exercise.name).join(' ')}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  )
+
+  return <>
+    <div className="section-heading">
+      <div>
+        <h2>Your effort, recorded.</h2>
+        <p>{sessions.filter((session) => !session.legacy).length} sessions · {sessions.filter((session) => session.legacy).length} earlier exercise logs</p>
+      </div>
+      <button className="button primary" onClick={onStart}><Icon name="plus" /> New workout</button>
+    </div>
+    <label className="search-box">
+      <Icon name="search" />
+      <input aria-label="Search workout history" placeholder="Search workouts, exercises or dates…" value={search} onChange={(event) => setSearch(event.target.value)} />
+    </label>
+    {!filtered.length ? <section className="card">
+      <Empty icon="history" title={search ? 'No matching workouts' : 'Your story starts with a session'}>
+        {search ? 'Try another exercise, workout name or date.' : 'Log your first workout and build a history you can be proud of.'}
+      </Empty>
+    </section> : <div className="history-list">
+      {filtered.map((session) => <article className="card history-card" key={session._id}>
+        <div className="history-top">
+          <span className="tile-icon"><Icon name="dumbbell" /></span>
+          <div className="history-title">
+            <h3>{session.name}</h3>
+            <p>{formatDate(session.date)}{session.legacy && <span className="legacy-tag">Earlier log · delete only</span>}</p>
+          </div>
+          <button className="button secondary small" aria-expanded={expanded === session._id} onClick={() => setExpanded(expanded === session._id ? null : session._id)}>
+            {expanded === session._id ? 'Hide details' : 'View details'}
+          </button>
+        </div>
+        <div className="history-metrics">
+          <span>{session.exercises.length} exercises</span>
+          <span>{completedSets(session).length} completed sets</span>
+          <span>{formatNumber(volume(session))} kg volume</span>
+          {session.duration > 0 && <span>{session.duration} min</span>}
+        </div>
+        {expanded === session._id && <div className="session-details">
+          {session.exercises.map((exercise) => <div key={exercise.id}>
+            <h4>{exercise.name}</h4>
+            {exercise.sets.map((set, index) => <p key={set.id}>
+              <span>Set {index + 1}</span>
+              <strong>{formatNumber(set.weight)} kg × {set.reps} reps</strong>
+              <span>{set.completed ? 'Complete' : 'Not completed'}</span>
+            </p>)}
+          </div>)}
+          {session.notes && <p className="session-notes">{session.notes}</p>}
+        </div>}
+        <div className="card-actions">
+          {!session.legacy && <button onClick={() => onEdit(session)}><Icon name="edit" size={16} /> Edit workout</button>}
+          <button className="danger-text" onClick={() => session.legacy ? onDeleteLegacy(session) : onDelete(session)}>
+            <Icon name="trash" size={16} /> {session.legacy ? 'Delete earlier log' : 'Delete'}
+          </button>
+        </div>
+      </article>)}
+    </div>}
+  </>
 }
 function Progress({ sessions, personalRecords }) {
   const [selection, setSelection] = useState('')

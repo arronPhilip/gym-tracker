@@ -43,13 +43,13 @@ All weights are in **kg**. Only completed sets count towards training volume and
 
 ## Existing MongoDB records
 
-The original `workouts` collection is preserved unchanged. Its records appear as **Earlier log · read-only**. They contribute to volume, exercise progress and records, but not the count of full sessions. They are not silently converted, updated or deleted. New data uses `workoutsessions`, `workoutroutines` and `bodyweights` collections.
+The original `workouts` collection remains in its original format; no automatic migration or edits are made. Its records appear in history as **Earlier log · delete only** and contribute to volume, exercise progress and records, but not the count of full sessions. The verified legacy owner can permanently delete an individual earlier log from history after confirmation. This removes it from the original collection, exports and progress calculations. New data uses `workoutsessions`, `workoutroutines` and `bodyweights` collections.
 
 The old `client/` files are retained for reference, including the user's uncommitted changes. The active website is now in `src/`. Old `/workouts` endpoints are retired; the new website uses `/api/` routes. No automatic database migration runs at startup.
 
 ## Privacy and authentication
 
-Google sign-in is verified on the server. Public signup accepts verified Gmail and Google Workspace identities, but each account can only access its own sessions, routines, bodyweight and exports. The configured verified legacy-owner email alone can access the original read-only workouts and pre-existing unowned records. Startup does not migrate or delete old data. Other third-party email Google accounts are currently not accepted.
+Google sign-in is verified on the server. Public signup accepts verified Gmail and Google Workspace identities, but each account can only access its own sessions, routines, bodyweight and exports. The configured verified legacy-owner email alone can access the original earlier workouts and pre-existing unowned records. Startup does not migrate, edit or automatically delete old data; an earlier workout is removed only when the owner explicitly confirms its deletion. Other third-party email Google accounts are currently not accepted.
 
 Opaque session cookies are HttpOnly; production cookies require HTTPS and use Secure, SameSite=Strict and the __Host- prefix. Account headers prevent stale-tab access after an account switch. Writes require anti-forgery tokens and allowed origins. Sessions expire after seven days and logout revokes them in MongoDB. Sign-in attempts are rate-limited in memory, which resets on restart; this is not a distributed abuse prevention system.
 

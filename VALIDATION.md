@@ -1,3 +1,13 @@
+# Deployment security/build patch — 8 October 2026
+
+The first Render deployment of 587419d failed before startup because production-mode `npm ci` omitted Vite. The corrected build command explicitly includes frontend build dependencies and installs production-only backend dependencies.
+
+The local deployment patch updates compatible dependencies without `npm audit fix --force` and replaces the development-only nodemon watcher with `node --watch`. Earlier local checks passed 29 tests, lint, and the Vite production build; rerun them after synchronizing the earlier-log deletion feature. These checks do not establish live Google login or make a real database write.
+
+The earlier-log deletion update has not yet been deployed to Render.
+
+---
+
 # Protected multi-user release — 7 October 2026
 
 Local automated validation is recorded below separately from the original release. Fresh direct checks passed: 29 tests, zero failures, clean ESLint and a successful Vite production build. The PowerShell npm wrapper stalled without output and was stopped; invoking the same installed tools directly completed successfully.
@@ -19,7 +29,7 @@ No hosted release is claimed. No old workout data was migrated or deleted by the
 - Production bundle generated successfully with Vite's build API; clean process exit.
 - No new runtime dependencies were required.
 
-API tests use an explicitly injected in-memory store, never the user's MongoDB database. They cover session create/edit/delete, routine create/edit/delete and completion reset, bodyweight create/edit/delete, export, preserved read-only legacy logs, invalid values/dates/IDs, nonexistent records, foreign browser origins and excessive inputs.
+API tests use an explicitly injected in-memory store, never the user's MongoDB database. They cover session create/edit/delete, routine create/edit/delete and completion reset, bodyweight create/edit/delete, export, owner-only deletion of individual earlier logs, invalid values/dates/IDs, nonexistent records, foreign browser origins and excessive inputs.
 
 Calculation tests cover completed-only volume, exercise-name grouping, daily best progression, records, tie-breaking, zero-weight exercises and empty data.
 

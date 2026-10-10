@@ -33,7 +33,19 @@ test('session create, edit, history, export and delete', async () => {
   const exported = (await api('export')).body; assert.equal(exported.format, 'gymtrack-export-v1'); assert.ok(exported.sessions.some((s) => s.name === 'Upper body edited')); assert.equal(exported.earlierExerciseLogs[0].sets, 3);
   assert.equal((await api(`sessions/${created.body._id}`, 'DELETE')).status, 200); assert.equal((await api(`sessions/${created.body._id}`, 'DELETE')).status, 404);
 });
-test('legacy records are returned read-only without migration', async () => { const history = (await api('sessions')).body; const legacy = history.find((s) => s.legacy); assert.equal(legacy._id, 'legacy:123456789012345678901234'); assert.equal(legacy.exercises[0].sets.length, 3); assert.equal((await api(`sessions/${legacy._id}`, 'DELETE')).status, 400); assert.equal((await store.legacy({ userId: owner.user.id, legacy: true }))[0].sets, 3); });
+test('earlier exercise logs can only be permanently deleted by the legacy owner', async () => {
+  const legacyId = '123456789012345678901234';
+  const history = (await api('sessions')).body; const legacy = history.find((s) => s.legacy);
+  assert.equal(legacy._id, `legacy:${legacyId}`); assert.equal(legacy.exercises[0].sets.length, 3);
+  assert.equal((await api(`sessions/${legacy._id}`, 'DELETE')).status, 400);
+  assert.equal((await store.legacy({ userId: owner.user.id, legacy: true }))[0].sets, 3);
+  const other = await login('legacy-delete-other');
+  assert.equal((await api(`legacy/${legacyId}`, 'DELETE', undefined, {}, other)).status, 404);
+  assert.equal((await store.legacy({ userId: owner.user.id, legacy: true })).length, 1);
+  assert.equal((await api(`legacy/${legacyId}`, 'DELETE')).status, 200);
+  assert.equal((await api(`legacy/${legacyId}`, 'DELETE')).status, 404);
+  assert.equal((await store.legacy({ userId: owner.user.id, legacy: true })).length, 0);
+});
 test('routines reset completion and support edit/delete', async () => { const created = await api('routines', 'POST', workout()); assert.equal(created.status, 201); assert.equal(created.body.exercises[0].sets[0].completed, false); assert.equal((await api(`routines/${created.body._id}`, 'PUT', { ...workout(), name: 'Push A' })).body.name, 'Push A'); assert.equal((await api(`routines/${created.body._id}`, 'DELETE')).status, 200); });
 test('bodyweight create/update/export/delete', async () => { const created = await api('bodyweights', 'POST', { date: '2026-10-06', weight: 75.5 }); assert.equal(created.status, 201); assert.equal((await api(`bodyweights/${created.body._id}`, 'PUT', { date: '2026-10-05', weight: 75 })).body.weight, 75); assert.ok((await api('export')).body.bodyweights.some((w) => w._id === created.body._id)); assert.equal((await api(`bodyweights/${created.body._id}`, 'DELETE')).status, 200); });
 test('invalid data and record IDs return client errors', async () => {
@@ -77,6 +89,7 @@ test('unowned previous data is available only to the verified legacy owner', asy
   assert.equal((await seeded.legacy(ownedScope)).length, 1); assert.equal((await seeded.legacy(strangerScope)).length, 0);
   assert.equal(await seeded.update('routines', '111111111111111111111111', { name: 'Stolen' }, strangerScope), null);
   assert.equal(await seeded.remove('routines', '111111111111111111111111', strangerScope), null);
+  assert.equal(await seeded.removeLegacy('222222222222222222222222', strangerScope), null);
   await assert.rejects(() => seeded.list('routines'), /Account scope/);
 });
 test('logout revokes the session and session cookies are HttpOnly and SameSite', async () => {

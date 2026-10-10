@@ -36,6 +36,11 @@ function createApp(store, options = {}) {
     const [sessions, legacy] = await Promise.all([store.list('sessions', req.scope), store.legacy(req.scope)]);
     res.json([...sessions, ...legacy.map(legacySession)].sort((a, b) => b.date.localeCompare(a.date)));
   });
+  app.delete('/api/legacy/:id', async (req, res) => {
+    const record = await store.removeLegacy(validation.objectId(req.params.id), req.scope);
+    if (!record) return res.status(404).json({ message: 'Record not found.' });
+    res.json({ message: 'Record deleted.' });
+  });
   for (const [type, normalise] of [['sessions', validation.session], ['routines', validation.routine], ['bodyweights', validation.bodyweight]]) {
     if (type !== 'sessions') app.get(`/api/${type}`, async (req, res) => res.json(await store.list(type, req.scope)));
     app.post(`/api/${type}`, async (req, res) => res.status(201).json(await store.create(type, normalise(req.body), req.scope)));

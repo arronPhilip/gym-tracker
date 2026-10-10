@@ -20,6 +20,7 @@ const mongoStore = {
   update: (type, id, data, scope) => models[type].findOneAndUpdate({ _id: id, ...scopeFilter(scope) }, { $set: { ...data, ownerId: scope.userId } }, { returnDocument: 'after', runValidators: true }).lean(),
   remove: (type, id, scope) => models[type].findOneAndDelete({ _id: id, ...scopeFilter(scope) }).lean(),
   legacy: (scope) => { scopeFilter(scope); return scope.legacy ? Workout.find().sort({ date: -1 }).lean() : Promise.resolve([]); },
+  removeLegacy: (id, scope) => { scopeFilter(scope); return scope.legacy ? Workout.findOneAndDelete({ _id: id }).lean() : Promise.resolve(null); },
 };
 function legacySession(workout) {
   const count = Math.max(1, Math.min(30, Math.floor(Number(workout.sets) || 1)));
@@ -36,6 +37,7 @@ function memoryStore(seed = {}) {
     update: async (type, key, value, scope) => { scopeFilter(scope); const index = data[type].findIndex(record => record._id === key && owns(record, scope)); if (index < 0) return null; data[type][index] = { ...data[type][index], ...structuredClone(value), ownerId: scope.userId }; return structuredClone(data[type][index]); },
     remove: async (type, key, scope) => { scopeFilter(scope); const index = data[type].findIndex(record => record._id === key && owns(record, scope)); return index < 0 ? null : data[type].splice(index, 1)[0]; },
     legacy: async scope => { scopeFilter(scope); return scope.legacy ? structuredClone(data.legacy) : []; },
+    removeLegacy: async (key, scope) => { scopeFilter(scope); if (!scope.legacy) return null; const index = data.legacy.findIndex(record => record._id === key); return index < 0 ? null : data.legacy.splice(index, 1)[0]; },
   };
 }
 module.exports = { mongoStore, memoryStore, legacySession, scopeFilter };

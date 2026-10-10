@@ -1,12 +1,12 @@
 # Protected GymTrack deployment
 
-Status: prepared locally, not deployed or live-verified.
+Status: the Render Free service `gymtrack-arron` has been deployed and `/api/health` was verified in MongoDB mode. Google sign-in still needs an end-to-end check: the hosted origin was rejected by the Google OAuth client. The earlier-log deletion update is pending a Render deployment.
 
 ## Render web service
 - Source: https://github.com/arronPhilip/gym-tracker, branch main, protected release only.
 - Runtime: Node; use Node 22.22 or a newer supported Node 22 release.
 - Repository root: leave blank.
-- Build: npm ci && npm --prefix server ci && npm run build
+- Build: npm ci --include=dev && npm --prefix server ci --omit=dev && npm run build
 - Start: npm start
 - Health check: /api/health
 - Instance: Free only. No card, paid database, persistent disk or paid upgrade.
@@ -29,7 +29,7 @@ Verify the existing cluster tier and account first. Prefer adding only Render's 
 1. Tests, lint and build pass; source manifest excludes .env, Git metadata, dependencies and build output.
 2. Signed-out API calls for sessions, routines, bodyweight and export return 401 and reveal no data.
 3. Health and privacy pages load over HTTPS.
-4. Live Google login works for the owner; seven earlier logs and the reviewed TEST — Push Workout routine are intact.
+4. Live Google login works for the owner; earlier logs and the reviewed TEST — Push Workout routine remain intact unless the owner explicitly deletes an individual earlier log.
 5. A separately approved second account sees empty private data, not Arron's records. Do not create fake Google identities or log into another person's account.
 6. CSRF/origin checks, account-switch rejection, logout, expiry and secure cookies are tested. Automated mock checks do not establish live Google or MongoDB correctness.
 7. Do not create completed test workouts in the real database without explicit approval. Keep backups/export copies under the user's control.

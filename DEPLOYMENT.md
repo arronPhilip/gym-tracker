@@ -1,6 +1,6 @@
 # Protected GymTrack deployment
 
-Status: the Render Free service `gymtrack-arron` has been deployed and `/api/health` was verified in MongoDB mode. Google sign-in still needs an end-to-end check: the hosted origin was rejected by the Google OAuth client. The earlier-log deletion update is pending a Render deployment.
+Status: commit `b55c8ba` is deployed to the Render Free service `gymtrack-arron`. `/api/health` returned MongoDB mode and the deployed frontend includes individual earlier-log deletion. Google sign-in still needs an end-to-end check because the hosted origin was rejected by the Google OAuth client. Add `https://gymtrack-arron.onrender.com` to the existing Web OAuth client's authorized JavaScript origins; Google ID-token verification does not require a client secret.
 
 ## Render web service
 - Source: https://github.com/arronPhilip/gym-tracker, branch main, protected release only.

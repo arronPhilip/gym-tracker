@@ -1,10 +1,10 @@
-# Deployment security/build patch — 8 October 2026
+# Deployment verification — 10 October 2026
 
 The first Render deployment of 587419d failed before startup because production-mode `npm ci` omitted Vite. The corrected build command explicitly includes frontend build dependencies and installs production-only backend dependencies.
 
-The local deployment patch updates compatible dependencies without `npm audit fix --force` and replaces the development-only nodemon watcher with `node --watch`. Earlier local checks passed 29 tests, lint, and the Vite production build; rerun them after synchronizing the earlier-log deletion feature. These checks do not establish live Google login or make a real database write.
+The deployment patch updates compatible dependencies without `npm audit fix --force` and replaces the development-only nodemon watcher with `node --watch`. After restoring the earlier-log deletion feature, all 29 tests passed, lint was clean, the Vite production build succeeded, and production dependency audits reported zero known vulnerabilities.
 
-The earlier-log deletion update has not yet been deployed to Render.
+Render successfully built and deployed commit `b55c8ba`. The live health endpoint returned HTTP 200 in MongoDB mode, the served frontend bundle contains the earlier-log deletion flow, and an anonymous delete request was rejected with HTTP 401. No real workout record was deleted. Google sign-in remains unverified because the deployed origin is not authorized in the Google OAuth client.
 
 ---
 

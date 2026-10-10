@@ -43,7 +43,7 @@ All weights are in **kg**. Only completed sets count towards training volume and
 
 ## Existing MongoDB records
 
-The original `workouts` collection remains in its original format; no automatic migration or edits are made. Its records appear in history as **Earlier log · delete only** and contribute to volume, exercise progress and records, but not the count of full sessions. The verified legacy owner can permanently delete an individual earlier log from history after confirmation. This removes it from the original collection, exports and progress calculations. New data uses `workoutsessions`, `workoutroutines` and `bodyweights` collections.
+The original `workouts` collection remains in its original format; no automatic migration or edits are made. Its records appear in history as **Earlier log** and contribute to volume, exercise progress and records, but not the count of full sessions. The verified legacy owner can permanently delete an individual earlier log from history after confirmation. This removes it from the original collection, exports and progress calculations. New data uses `workoutsessions`, `workoutroutines` and `bodyweights` collections.
 
 The old `client/` files are retained for reference, including the user's uncommitted changes. The active website is now in `src/`. Old `/workouts` endpoints are retired; the new website uses `/api/` routes. No automatic database migration runs at startup.
 

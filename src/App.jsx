@@ -143,7 +143,7 @@ function History({ sessions, onEdit, onDelete, onDeleteLegacy, onStart }) {
           <span className="tile-icon"><Icon name="dumbbell" /></span>
           <div className="history-title">
             <h3>{session.name}</h3>
-            <p>{formatDate(session.date)}{session.legacy && <span className="legacy-tag">Earlier log · delete only</span>}</p>
+            <p>{formatDate(session.date)}{session.legacy && <span className="legacy-tag">Earlier log</span>}</p>
           </div>
           <button className="button secondary small" aria-expanded={expanded === session._id} onClick={() => setExpanded(expanded === session._id ? null : session._id)}>
             {expanded === session._id ? 'Hide details' : 'View details'}
